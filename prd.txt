@@ -1,0 +1,63 @@
+PRD – Trello-style Kanban Board MVP (Next.js)
+📌 Project Name
+Trello MVP Clone – Kanban Board Web App
+🧭 Goal
+Build a minimal yet functional Trello-like Kanban app using Next.js that allows users to create boards, columns (lists), and cards, and rearrange them using drag-and-drop. Backend is powered by Prisma + SQLite.
+🔑 Core Features (MVP Scope)
+✅ View all boards
+✅ Create a new board (title only)
+✅ Navigate to individual board page
+✅ Display columns (lists) horizontally
+✅ Add a new column
+✅ Reorder columns (optional)
+✅ Display cards vertically in columns
+✅ Add new card to a column
+✅ Drag-and-drop to reorder cards in a column
+✅ Drag-and-drop to move cards across columns
+✅ Persist all data (boards, columns, cards) in SQLite via Prisma
+✅ Save order of columns and cards
+🧱 Tech Stack
+Frontend: Next.js 14 (App Router or Pages Router)
+UI Components: Tailwind CSS + shadcn/ui (optional)
+Drag & Drop: @dnd-kit/core, @dnd-kit/sortable
+State: React state or Zustand
+Backend: Next.js API routes
+Database: Prisma + SQLite
+Hosting: Vercel (optional)
+🧩 Entity Model
+Board: id, title, columns[]
+Column: id, title, boardId, order, cards[]
+Card: id, content, columnId, order
+🧩 UI Wireframes (Textual)
+/ – Board List
+• Display list of boards
+• Button: + New Board
+/board/[id] – Board View
+• Horizontally scrollable columns
+• Column title
+• Button: + Add Card
+• List of draggable cards
+• Button: + Add Column
+🔌 API Endpoints (CRUD)
+GET /api/boards - Get all boards
+POST /api/boards - Create new board
+GET /api/boards/:id - Get full board details
+POST /api/columns - Add new column
+PATCH /api/columns/:id - Update column title or order
+POST /api/cards - Add new card
+PATCH /api/cards/:id - Update card content or order
+📌 AI Coding Agent Guidelines
+- Use Tailwind for layout styling.
+- Use React Server Components (if App Router), otherwise traditional client-side components.
+- Use @dnd-kit/sortable for drag-and-drop of cards.
+- Implement optimistic UI updates where practical.
+- Keep code modular (separate components per feature).
+- All DB access should go through Prisma ORM.
+- Prioritize clear naming and readability over short syntax.
+- Return updated order values for drag-drop items.
+🔜 Nice-to-Have (Not in MVP)
+• User login (via NextAuth.js)
+• Real-time sync (via WebSocket)
+• Card comments
+• Card detail modal
+• Due dates / labels
