@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { use } from 'react'
 import { Board, Column, Card } from '@/types'
-import { Plus, ArrowLeft } from 'lucide-react'
+import { Plus, ArrowLeft, Calendar, User, Flag, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import {
   DndContext,
@@ -22,13 +22,14 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import AddCardModal from '@/components/AddCardModal'
 import AddColumnModal from '@/components/AddColumnModal'
+import CardDetailModal from '@/components/CardDetailModal'
 
 interface BoardPageProps {
   params: Promise<{ id: string }>
 }
 
 // Sortable Card Component
-function SortableCard({ card }: { card: Card }) {
+function SortableCard({ card, onCardClick }: { card: Card, onCardClick: (card: Card) => void }) {
   const {
     attributes,
     listeners,
@@ -43,17 +44,80 @@ function SortableCard({ card }: { card: Card }) {
     transition,
   }
 
+  const getPriorityColor = (priority?: string) => {
+    switch (priority) {
+      case 'high': return 'text-red-500 bg-red-50'
+      case 'medium': return 'text-yellow-500 bg-yellow-50'
+      case 'low': return 'text-green-500 bg-green-50'
+      default: return 'text-gray-500 bg-gray-50'
+    }
+  }
+
+  const formatDueDate = (dueDate?: Date) => {
+    if (!dueDate) return null
+    const date = new Date(dueDate)
+    const now = new Date()
+    const isOverdue = date < now
+    const isToday = date.toDateString() === now.toDateString()
+    
+    return (
+      <div className={`flex items-center gap-1 text-xs ${
+        isOverdue ? 'text-red-600' : isToday ? 'text-orange-600' : 'text-gray-600'
+      }`}>
+        <Calendar size={12} />
+        {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      </div>
+    )
+  }
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onCardClick(card)
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 cursor-grab active:cursor-grabbing ${
+      onClick={handleCardClick}
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
         isDragging ? 'opacity-50' : ''
       }`}
     >
-      <p className="text-gray-900">{card.content}</p>
+      {/* Priority indicator */}
+      {card.priority && (
+        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium mb-2 ${getPriorityColor(card.priority)}`}>
+          <Flag size={10} />
+          {card.priority.toUpperCase()}
+        </div>
+      )}
+      
+      {/* Content */}
+      <p className="text-gray-900 mb-3">{card.content}</p>
+      
+      {/* Card metadata */}
+      <div className="space-y-2">
+        {/* Due date */}
+        {card.dueDate && formatDueDate(card.dueDate)}
+        
+        {/* Assigned person */}
+        {card.assignedTo && (
+          <div className="flex items-center gap-1 text-xs text-gray-600">
+            <User size={12} />
+            {card.assignedTo}
+          </div>
+        )}
+        
+        {/* Comments count */}
+        {card.comments && card.comments.length > 0 && (
+          <div className="flex items-center gap-1 text-xs text-gray-600">
+            <MessageCircle size={12} />
+            {card.comments.length} comment{card.comments.length !== 1 ? 's' : ''}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -61,10 +125,12 @@ function SortableCard({ card }: { card: Card }) {
 // Sortable Column Component
 function SortableColumn({ 
   column, 
-  onAddCard 
+  onAddCard,
+  onCardClick
 }: { 
   column: Column
   onAddCard: (columnId: string) => void
+  onCardClick: (card: Card) => void
 }) {
   const {
     attributes,
@@ -97,7 +163,7 @@ function SortableColumn({
       <SortableContext items={column.cards.map(card => card.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-3">
           {column.cards.map((card) => (
-            <SortableCard key={card.id} card={card} />
+            <SortableCard key={card.id} card={card} onCardClick={onCardClick} />
           ))}
         </div>
       </SortableContext>
@@ -120,6 +186,8 @@ export default function BoardPage({ params }: BoardPageProps) {
   const [activeCard, setActiveCard] = useState<Card | null>(null)
   const [showAddCardModal, setShowAddCardModal] = useState(false)
   const [showAddColumnModal, setShowAddColumnModal] = useState(false)
+  const [showCardDetailModal, setShowCardDetailModal] = useState(false)
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [selectedColumnId, setSelectedColumnId] = useState<string>('')
 
   const sensors = useSensors(
@@ -153,7 +221,13 @@ export default function BoardPage({ params }: BoardPageProps) {
     setShowAddCardModal(true)
   }
 
-  const handleAddCardSubmit = async (content: string) => {
+  const handleAddCardSubmit = async (cardData: {
+    content: string
+    dueDate?: Date
+    assignedTo?: string
+    priority?: 'low' | 'medium' | 'high'
+    initialComment?: string
+  }) => {
     if (!board) return
 
     try {
@@ -163,7 +237,7 @@ export default function BoardPage({ params }: BoardPageProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          content,
+          ...cardData,
           columnId: selectedColumnId,
         }),
       })
@@ -215,6 +289,44 @@ export default function BoardPage({ params }: BoardPageProps) {
       }
     } catch (error) {
       console.error('Error adding column:', error)
+    }
+  }
+
+  const handleCardClick = (card: Card) => {
+    setSelectedCard(card)
+    setShowCardDetailModal(true)
+  }
+
+  const handleCardUpdate = async (updatedCard: Partial<Card>) => {
+    if (!selectedCard) return
+
+    try {
+      const response = await fetch(`/api/cards/${selectedCard.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedCard),
+      })
+
+      if (response.ok) {
+        const updated = await response.json()
+        // Update the board state with the updated card
+        setBoard(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            columns: prev.columns.map(col => ({
+              ...col,
+              cards: col.cards.map(card => 
+                card.id === selectedCard.id ? updated : card
+              )
+            }))
+          }
+        })
+      }
+    } catch (error) {
+      console.error('Error updating card:', error)
     }
   }
 
@@ -364,6 +476,7 @@ export default function BoardPage({ params }: BoardPageProps) {
                 key={column.id} 
                 column={column} 
                 onAddCard={handleAddCard}
+                onCardClick={handleCardClick}
               />
             ))}
           </div>
@@ -390,6 +503,13 @@ export default function BoardPage({ params }: BoardPageProps) {
         isOpen={showAddColumnModal}
         onClose={() => setShowAddColumnModal(false)}
         onAdd={handleAddColumn}
+      />
+
+      <CardDetailModal
+        isOpen={showCardDetailModal}
+        onClose={() => setShowCardDetailModal(false)}
+        card={selectedCard}
+        onUpdate={handleCardUpdate}
       />
     </div>
   )
