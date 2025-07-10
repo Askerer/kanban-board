@@ -3,8 +3,19 @@ export interface Card {
   content: string;
   order: number;
   columnId: string;
+  dueDate?: Date;
+  assignedTo?: string;
+  priority?: 'low' | 'medium' | 'high';
+  comments: Comment[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  author: string;
+  createdAt: Date;
 }
 
 export interface ActivityLog {
