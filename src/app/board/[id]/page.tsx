@@ -23,6 +23,9 @@ import { CSS } from '@dnd-kit/utilities'
 import AddCardModal from '@/components/AddCardModal'
 import AddColumnModal from '@/components/AddColumnModal'
 import CardDetailModal from '@/components/CardDetailModal'
+import AuthCheck from '@/components/AuthCheck'
+import NavBar from '@/components/NavBar'
+
 
 interface BoardPageProps {
   params: Promise<{ id: string }>
@@ -173,7 +176,7 @@ function SortableColumn({
         className="w-full mt-4 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-2"
       >
         <Plus size={16} />
-        Add Card
+        新增卡片
       </button>
     </div>
   )
@@ -422,22 +425,28 @@ export default function BoardPage({ params }: BoardPageProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
+      <AuthCheck>
+        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </AuthCheck>
     )
   }
 
   if (!board) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-lg">Board not found</div>
-      </div>
+      <AuthCheck>
+        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+          <div className="text-lg">Board not found</div>
+        </div>
+      </AuthCheck>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <AuthCheck>
+      <div className="min-h-screen bg-gray-100">
+        <NavBar />
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -448,7 +457,7 @@ export default function BoardPage({ params }: BoardPageProps) {
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
               >
                 <ArrowLeft size={20} />
-                Back to Boards
+                返回看板
               </Link>
               <h1 className="text-xl font-semibold text-gray-900">{board.title}</h1>
             </div>
@@ -457,7 +466,7 @@ export default function BoardPage({ params }: BoardPageProps) {
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
               <Plus size={16} />
-              Add Column
+              新增欄位
             </button>
           </div>
         </div>
@@ -505,6 +514,7 @@ export default function BoardPage({ params }: BoardPageProps) {
         onAdd={handleAddColumn}
       />
 
+
       <CardDetailModal
         isOpen={showCardDetailModal}
         onClose={() => setShowCardDetailModal(false)}
@@ -512,5 +522,9 @@ export default function BoardPage({ params }: BoardPageProps) {
         onUpdate={handleCardUpdate}
       />
     </div>
+
+      </div>
+    </AuthCheck>
+
   )
 } 
